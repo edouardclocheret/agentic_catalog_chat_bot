@@ -1,0 +1,174 @@
+{
+  "WDT780SAEM1": {
+    "name": "Whirlpool Dishwasher",
+    "type": "Dishwasher",
+    "parts": {
+      "PS3406971": {
+        "name": "Lower Dishrack Wheel",
+        "PartSelect#": "PS3406971",
+        "Manufacturer#": "W10195416",
+        "price": 33.48,
+        "image_url":"https://partselectcom-gtcdcddbene3cpes.z01.azurefd.net/3406971-1-M-Whirlpool-W10195416-Lower-Dishrack-Wheel.jpg",
+        "repair_video_url":"https://youtu.be/fz1YHu782Wk?si=vUh90Jq1OAg9rX3q",
+        "solves_symptoms":["Not cleaning dishes properly",
+            "Door won’t close",
+            "Noisy",
+            "Door latch failure",
+            "Leaking",
+            "Will Not Start"]
+      },
+      "PS10065979": {
+        "name": "Upper Rack Adjuster Kit - White Wheels, Left and Right Sides",
+        "PartSelect#": "PS10065979",
+        "Manufacturer#": "W10712395",
+        "price": 52.95,
+        "image_url":"https://partselectcom-gtcdcddbene3cpes.z01.azurefd.net/10065979-1-M-Whirlpool-W10712395-Upper-Rack-Adjuster-Kit-White-Wheels-Left-and-Right-Sides.jpg",
+        "repair_video_url":"https://youtu.be/pZO1rcMwKBc?si=XbDAhpLTP43NPnNy",
+        "solves_symptoms":[
+            "Door won’t close",
+            "Door latch failure",
+            "Not cleaning dishes properly",
+            "Noisy",
+            "Leaking",
+            "Will Not Start"
+            ]
+
+      },
+      "PS11746591": {
+        "name": "Dishwasher Rack Track Stop",
+        "PartSelect#": "PS11746591",
+        "Manufacturer#": "WP8565925",
+        "price": 10.41,
+        "image_url":"https://partselectcom-gtcdcddbene3cpes.z01.azurefd.net/11746591-1-M-Whirlpool-WP8565925-Dishwasher-Rack-Track-Stop.jpg",
+        "repair_video_url":"https://youtu.be/siE-8HethWg?si=EslVzO6GdkmLhHlq",
+        "solves_symptoms":[
+            "Door latch failure",
+            "Door won’t close",
+            "Not cleaning dishes properly",
+            "Noisy"
+            ]
+
+      },
+      "PS972325": {
+        "name": "Door Balance Link Kit",
+        "PartSelect#": "PS972325",
+        "Manufacturer#": "8194001",
+        "price": 27.95,
+        "image_url":"https://partselectcom-gtcdcddbene3cpes.z01.azurefd.net/972325-1-M-Whirlpool-8194001-Door-Balance-Link-Kit.jpg",
+        "repair_video_url":"https://youtu.be/X02l3pHeOUI?si=41qA8SpHhPJb4IzZ",
+        "solves_symptoms":[
+            "Door latch failure",
+            "Door won’t close",
+            "Noisy",
+            "Leaking",
+            "Will Not Start"
+            ]
+
+      },
+      "PS11745496": {
+        "name": "Dishwasher Mounting Bracket",
+        "PartSelect#": "PS11745496",
+        "Manufacturer#": "WP8269145",
+        "price": 14.61,
+        "image_url":"https://partselectcom-gtcdcddbene3cpes.z01.azurefd.net/11745496-1-M-Whirlpool-WP8269145-Dishwasher-Mounting-Bracket.jpg",
+        "repair_video_url":"https://youtu.be/X7SLvFAiTkw?si=383BHSfWRyj0drmC",
+        "solves_symptoms":[
+            "Door latch failure",
+            "Door won’t close",
+            "Leaking"
+            ]
+
+      },
+      "PS11750093": {
+        "name": "Dishwasher Positioner",
+        "PartSelect#": "PS11750093",
+        "Manufacturer#": "WPW10195840",
+        "price": 45.95,
+        "image_url":"https://partselectcom-gtcdcddbene3cpes.z01.azurefd.net/11750093-1-M-Whirlpool-WPW10195840-Dishwasher-Positioner.jpg",
+        "repair_video_url":"https://youtu.be/3no3S5XCunU?si=SFwAYM6ePR5bDnW3",
+        "solves_symptoms":[
+            "Door won’t close",
+            "Not cleaning dishes properly",
+            "Door latch failure"
+            ]
+      },
+      "PS12348515": {
+        "name": "Dishwasher Door Seal",
+        "PartSelect#": "PS12348515",
+        "Manufacturer#": "W11177741",
+        "price": 55.51,
+        "image_url":"https://partselectcom-gtcdcddbene3cpes.z01.azurefd.net/12348515-1-M-Whirlpool-W11177741-Dishwasher-Door-Seal.jpg",
+        "repair_video_url":"https://youtu.be/CQ6N_1G2zzE?si=XRue7Ncg3kuyMvSS",
+        "solves_symptoms":["Leaking"]
+
+      },
+      "PS11753379": {
+        "name": "Dishwasher Drain Pump",
+        "PartSelect#": "PS11753379",
+        "Manufacturer#": "WPW10348269",
+        "price": 59.95,
+        "image_url":"https://partselectcom-gtcdcddbene3cpes.z01.azurefd.net/11753379-1-M-Whirlpool-WPW10348269-Dishwasher-Drain-Pump.jpg",
+        "repair_video_url":"https://youtu.be/LRTH3Wq_Apw?si=ea4Bc8AALAQOylvM",
+        "solves_symptoms":[
+            "Not draining",
+            "Leaking",
+            "Noisy",
+            "Not cleaning dishes properly",
+            "Will Not Start"
+            ]
+
+      },
+      "PS11750092": {
+        "name": "Dishwasher Dishrack Adjuster",
+        "PartSelect#": "PS11750092",
+        "Manufacturer#": "WPW10195839",
+        "price": 33.95,
+        "image_url":"https://partselectcom-gtcdcddbene3cpes.z01.azurefd.net/11750092-1-M-Whirlpool-WPW10195839-Dishwasher-Dishrack-Adjuster.jpg",
+        "repair_video_url":"https://youtu.be/SX-kyfFe8UM?si=CLK68W9odZI18jdW",
+        "solves_symptoms":["Door won’t close",
+            "Door latch failure"]
+      },
+
+      "PS11755592": {
+        "name": "Dishwasher Lower Spray Arm",
+        "PartSelect#": "PS11755592",
+        "Manufacturer#": "WPW10491331",
+        "price": 41.95,
+        "image_url":"https://partselectcom-gtcdcddbene3cpes.z01.azurefd.net/11755592-1-M-Whirlpool-WPW10491331-Dishwasher-Lower-Spray-Arm.jpg",
+        "repair_video_url":"https://youtu.be/5d9hVhnsv30?si=RoRNKVMXjXivTBHM",
+        "solves_symptoms":[
+            "Not cleaning dishes properly",
+            "Leaking",
+            "Noisy",
+            "Not drying dishes properly",
+            "Not draining"
+            ]
+
+      },
+      "PS11755736": {
+        "name": "Dishwasher Retainer Clip",
+        "PartSelect#": "PS11755736",
+        "Manufacturer#": "WPW10503548",
+        "price": 20.95,
+        "image_url":"https://partselectcom-gtcdcddbene3cpes.z01.azurefd.net/11755736-1-M-Whirlpool-WPW10503548-Dishwasher-Retainer-Clip.jpg",
+        "repair_video_url":"https://youtu.be/siw5MV1rr64?si=vqWcHGeLM9Th4dUk",
+        "solves_symptoms":[]
+      },
+      "PS11759673": {
+        "name": "Dishwasher Filter",
+        "PartSelect#": "PS11759673",
+        "Manufacturer#": "W10872845",
+        "price": 46.01,
+        "image_url":"https://partselectcom-gtcdcddbene3cpes.z01.azurefd.net/11759673-1-M-Whirlpool-W10872845-Dishwasher-Filter.jpg",
+        "repair_video_url":"https://youtu.be/rb6amLby04k?si=_cqRkJZD2oAQu18B",
+        "solves_symptoms":[
+            "Not cleaning dishes properly",
+            "Not draining",
+            "Not drying dishes properly",
+            "Leaking"
+            ]
+
+      }
+    }
+  }
+}
