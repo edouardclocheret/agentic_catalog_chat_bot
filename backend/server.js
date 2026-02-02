@@ -1,40 +1,63 @@
-import express from "express"
-import cors from "cors"
-import dotenv from "dotenv"
-import fs from "fs"
-import path from "path"
+import express from "express";
+import cors from "cors";
+import fs from "fs";
+import crypto from "crypto";
+import { suggestPart } from "./llm.js";
+import { getRepairVideo } from "./tools.js";
 
-dotenv.config()
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-const app = express()
-app.use(cors())
-app.use(express.json())
+const partsData = JSON.parse(fs.readFileSync("./data/parts.json"));
+const sessions = {};   // agent memory
 
-// Fix for relative paths in Node ES modules
-const __dirname = new URL(".", import.meta.url).pathname
-const dataPath = path.join(__dirname, "data", "parts.json")
+app.post("/api/chat", async (req, res) => {
+  const { message, sessionId } = req.body;
+  const id = sessionId || crypto.randomUUID();
 
-// Load parts database
-const parts = JSON.parse(fs.readFileSync(dataPath, "utf-8"))
-
-// Health check
-app.get("/", (req, res) => {
-  res.send("Instalily backend is running")
-})
-
-// Parts API
-app.get("/api/parts/:partNumber", (req, res) => {
-  const partNumber = req.params.partNumber
-  const part = parts[partNumber]
-
-  if (!part) {
-    return res.status(404).json({ error: "Part not found" })
+  if (!sessions[id]) {
+    sessions[id] = {
+      symptoms: [],
+      partNumber: null,
+      goalComplete: false
+    };
   }
 
-  res.json(part)
-})
+  const state = sessions[id];
 
-// Start server
+  // Did user provide a part number?
+  const match = message.match(/PS\d+/i);
+  if (match) {
+    state.partNumber = match[0].toUpperCase();
+  } else {
+    state.symptoms.push(message);
+  }
+
+  // If we have the part number → use tool
+  if (state.partNumber) {
+    const video = getRepairVideo(state.partNumber, partsData);
+
+    const reply = video
+      ? `✅ I found the repair video for **${state.partNumber}**:\n${video}`
+      : `I found the part number ${state.partNumber}, but no video exists in the database.`;
+
+    return res.json({ message: reply, sessionId: id });
+  }
+
+  // Otherwise → ask GPT to suggest likely parts
+  const candidates = await suggestPart(state.symptoms);
+
+  const reply = `
+Based on your symptoms, these parts may be involved:
+${candidates}
+
+Please provide the **PartSelect number (PS...)** of the part you want.
+`;
+
+  res.json({ message: reply, sessionId: id });
+});
+
 app.listen(3001, () => {
-  console.log("Backend running on http://localhost:3001")
-})
+  console.log("AI Agent running on http://localhost:3001");
+});
