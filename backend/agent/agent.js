@@ -1,4 +1,4 @@
-import { agentGraph } from "./graph-v2.js";
+import { agentGraph } from "./graph.js";
 
 /**
  * Run the agent with the new clear graph structure

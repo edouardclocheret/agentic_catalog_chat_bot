@@ -1,4 +1,4 @@
-import { runAgent } from "./agent/agent-v2.js";
+import { runAgent } from "./agent/agent.js";
 
 async function testMemoryPersistence() {
   console.log("🧪 Testing Memory Persistence\n");

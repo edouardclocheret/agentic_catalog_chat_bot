@@ -1,60 +1,95 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
-import { isPartCompatible } from "../tools/compatibilityTool.js";
-import { diagnoseFromSymptoms } from "../tools/diagnosisTool.js";
 import fs from "fs";
 
 // Load parts data
 const partsData = JSON.parse(fs.readFileSync("./data/parts.json"));
 
 /**
- * Tool: Search for parts by keywords, symptoms, or part numbers
+ * COMPATIBILITY TOOL LOGIC
+ * Check if a part is compatible with an appliance model
  */
-export const searchPartsTool = tool(
-  async ({ query, model }) => {
-    const results = [];
-    const queryLower = query.toLowerCase();
-
-    if (!model || !partsData[model]) {
-      return `Model ${model} not found in database`;
-    }
-
-    const modelParts = partsData[model].parts || {};
-
-    for (const [partNum, partData] of Object.entries(modelParts)) {
-      const matchName = partData.name?.toLowerCase().includes(queryLower);
-      const matchSymptoms = partData.symptoms?.some(s =>
-        s.toLowerCase().includes(queryLower)
-      );
-      const matchPartNum = partNum.toLowerCase().includes(queryLower);
-
-      if (matchName || matchSymptoms || matchPartNum) {
-        results.push({
-          partNumber: partNum,
-          name: partData.name,
-          price: partData.price,
-          symptoms: partData.symptoms || [],
-          description: partData.description
-        });
-      }
-    }
-
-    return results.length > 0
-      ? JSON.stringify(results, null, 2)
-      : `No parts found matching "${query}" for model ${model}`;
-  },
-  {
-    name: "search_parts",
-    description:
-      "Search for parts by keyword, symptom, or part number for a specific appliance model",
-    schema: z.object({
-      query: z
-        .string()
-        .describe("Search query - part name, symptom, or part number"),
-      model: z.string().describe("Appliance model number (e.g., WDT780SAEM1)")
-    })
+function isPartCompatible(partNumber, model, partsData) {
+  // Check if model exists in data
+  if (!partsData[model]) {
+    return false;
   }
-);
+
+  // Check if part exists in this model's parts
+  const modelParts = partsData[model].parts || {};
+  return partNumber in modelParts;
+}
+
+/**
+ * DIAGNOSIS TOOL LOGIC
+ * Diagnose repair needs from symptoms
+ */
+function diagnoseFromSymptoms(model, symptoms, partsData) {
+  console.log(`\n[DIAGNOSIS] Called with model: ${model}, symptoms: ${JSON.stringify(symptoms)}`);
+  
+  if (!partsData[model]) {
+    console.log(`[DIAGNOSIS] Model not found: ${model}`);
+    return `Model ${model} not found in database`;
+  }
+
+  const modelParts = partsData[model].parts || {};
+  const suggestedParts = [];
+
+  console.log(`[DIAGNOSIS] Searching ${Object.keys(modelParts).length} parts for matches...`);
+
+  // Normalize function: replace curly quotes and other variants with standard apostrophe
+  const normalizeString = (str) => {
+    return str
+      .replace(/['']/g, "'")  // Replace curly quotes with regular apostrophe
+      .toLowerCase()
+      .trim();
+  };
+
+  // Normalize user symptoms once
+  const normalizedUserSymptoms = symptoms.map(normalizeString);
+
+  // Search through all parts for this model and find matches
+  for (const [partNum, partData] of Object.entries(modelParts)) {
+    // Use solves_symptoms field from the parts data
+    const partSymptoms = (partData.solves_symptoms || []);
+    
+    // Check if any user symptom matches any of this part's solves_symptoms
+    const hasMatch = normalizedUserSymptoms.some(normalizedUserSymptom =>
+      partSymptoms.some(partSymptom => {
+        const normalizedPartSymptom = normalizeString(partSymptom);
+        return normalizedPartSymptom === normalizedUserSymptom;
+      })
+    );
+
+    if (hasMatch) {
+      console.log(`[DIAGNOSIS]   ✓ Part ${partNum} matches`);
+      suggestedParts.push({
+        partNumber: partNum,
+        name: partData.name,
+        price: partData.price,
+        description: partData.description,
+        solves_symptoms: partData.solves_symptoms || []
+      });
+    }
+  }
+
+  console.log(`[DIAGNOSIS] Found ${suggestedParts.length} matching parts`);
+
+  if (suggestedParts.length === 0) {
+    return `No parts found for symptoms: ${symptoms.join(", ")}. Please describe the issue in more detail.`;
+  }
+
+  return JSON.stringify(
+    {
+      model,
+      symptoms,
+      suggestedParts,
+      message: `Found ${suggestedParts.length} part(s) that might fix these issues`
+    },
+    null,
+    2
+  );
+}
 
 /**
  * Tool: Check part compatibility
@@ -131,85 +166,19 @@ export const getInstallationsTool = tool(
 );
 
 /**
- * Tool: Get part details
- */
-export const getPartDetailsTool = tool(
-  async ({ partNumber, model }) => {
-    if (!partsData[model]?.parts[partNumber]) {
-      return `Part ${partNumber} not found for model ${model}`;
-    }
-
-    const part = partsData[model].parts[partNumber];
-    return JSON.stringify(
-      {
-        partNumber,
-        name: part.name,
-        price: part.price,
-        description: part.description,
-        symptoms: part.symptoms,
-        warranty: part.warranty,
-        inStock: part.inStock !== false
-      },
-      null,
-      2
-    );
-  },
-  {
-    name: "get_part_details",
-    description: "Get detailed information about a specific part",
-    schema: z.object({
-      partNumber: z.string().describe("Part number (e.g., PS11752778)"),
-      model: z.string().describe("Appliance model number")
-    })
-  }
-);
-
-/**
- * Tool: Extract part number and model from text
- */
-export const extractInformationTool = tool(
-  async ({ text }) => {
-    const partMatch = text.match(/PS\d+/i);
-    const modelMatch = text.match(/[A-Z]{3}\d{2,}/);
-
-    return JSON.stringify(
-      {
-        partNumber: partMatch ? partMatch[0].toUpperCase() : null,
-        model: modelMatch ? modelMatch[0] : null
-      },
-      null,
-      2
-    );
-  },
-  {
-    name: "extract_information",
-    description: "Extract part numbers and model numbers from user text",
-    schema: z.object({
-      text: z.string().describe("The text to extract information from")
-    })
-  }
-);
-
-/**
  * All available tools
  */
 export const tools = [
-  searchPartsTool,
   checkCompatibilityTool,
   diagnosisTool,
-  getInstallationsTool,
-  getPartDetailsTool,
-  extractInformationTool
+  getInstallationsTool
 ];
 
 /**
  * Map tool names to actual tool objects for execution
  */
 export const toolMap = {
-  search_parts: searchPartsTool,
   check_compatibility: checkCompatibilityTool,
   diagnose_repair: diagnosisTool,
-  get_installation_instructions: getInstallationsTool,
-  get_part_details: getPartDetailsTool,
-  extract_information: extractInformationTool
+  get_installation_instructions: getInstallationsTool
 };

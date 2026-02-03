@@ -117,13 +117,15 @@ ${partInstruction}
 - symptoms: list of problems or []
 ${goalInstruction}
 
-Symptom mapping:
-- leak/drip/water → "leaking"
-- loud/noise/sound → "noisy"
-- won't start/not start/won't turn on → "won't start"
-- not clean/dirty/residue → "not cleaning"
-- stuck/won't close/won't open → "door issue"
-- won't drain/drain → "not draining"
+Symptom mapping (match user's description to one of these exact terms):
+- "Not cleaning dishes properly" if user mentions: not clean, dirty, residue, not washing
+- "Door won't close" if user mentions: door stuck, door won't close, door issue, won't shut
+- "Noisy" if user mentions: loud, noise, sound, squeaking, grinding, rattling
+- "Door latch failure" if user mentions: latch broken, door won't latch, won't lock
+- "Leaking" if user mentions: leak, drip, water, wet
+- "Will Not Start" if user mentions: won't start, won't turn on, not starting
+- "Not draining" if user mentions: won't drain, not draining, standing water
+- "Not drying dishes properly" if user mentions: not drying, wet dishes, drying issue
 
 Return JSON ONLY:
 {
@@ -443,7 +445,7 @@ async function executeToolNode(state) {
       productModel: state.productModel,
       partNumber: state.partNumber,
       symptoms: state.symptoms,
-      goalType: state.goalType,
+      goalType: null,  // CLEAR goal after tool execution
       lastExtraction: state.lastExtraction
     };
   } catch (error) {
@@ -456,7 +458,7 @@ async function executeToolNode(state) {
       productModel: state.productModel,
       partNumber: state.partNumber,
       symptoms: state.symptoms,
-      goalType: state.goalType,
+      goalType: null,  // CLEAR goal after tool execution even on error
       lastExtraction: state.lastExtraction
     };
   }

@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import crypto from "crypto";
-import { runAgent } from "./agent/agent-v2.js";
+import { runAgent } from "./agent/agent.js";
 import dotenv from "dotenv";
 
 dotenv.config();
