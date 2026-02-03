@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import crypto from "crypto";
-import { runAgent } from "./agent/agent.js";
+import { runAgent } from "./agent/agent-v2.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -31,6 +31,7 @@ app.post("/api/chat", async (req, res) => {
     const id = sessionId || crypto.randomUUID();
 
     if (!sessions[id]) {
+      console.log(`\n[SERVER] Creating NEW session: ${id}`);
       sessions[id] = {
         messages: [],
         partNumber: null,
@@ -38,12 +39,17 @@ app.post("/api/chat", async (req, res) => {
         symptoms: [],
         goalType: null
       };
+    } else {
+      console.log(`\n[SERVER] Using EXISTING session: ${id}`);
+      console.log(`[SERVER]   Current goalType: ${sessions[id].goalType}`);
     }
 
     const sessionState = sessions[id];
 
     // Run the agent
     const reply = await runAgent(sessionState, message);
+
+    console.log(`[SERVER] Updated session goalType: ${sessionState.goalType}`);
 
     res.json({
       message: reply,

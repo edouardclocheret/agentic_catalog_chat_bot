@@ -12,6 +12,7 @@ function ChatWindow() {
 
   const [messages,setMessages] = useState(defaultMessage)
   const [input, setInput] = useState("");
+  const [sessionId, setSessionId] = useState(null);
 
   const messagesEndRef = useRef(null);
 
@@ -30,7 +31,13 @@ function ChatWindow() {
       setInput("");
 
       // Call API & set assistant message
-      const newMessage = await getAIMessage(messageText);
+      const newMessage = await getAIMessage(messageText, sessionId);
+      
+      // Store sessionId from response for next request
+      if (newMessage.sessionId) {
+        setSessionId(newMessage.sessionId);
+      }
+      
       setMessages(prevMessages => [...prevMessages, newMessage]);
     }
   };

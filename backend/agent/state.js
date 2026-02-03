@@ -1,40 +1,33 @@
 import { Annotation } from "@langchain/langgraph";
 
 /**
- * State schema for the PartSelect agent
- * Defines all the information tracked across the agent's execution
+ * State schema for the 3-role PartSelect agent
  * 
- * Note: Using LangGraph 1.x API with proper reducer pattern
+ * Architecture:
+ * - Extractor: Fills in lastExtraction, updates model/part/symptoms/goalType
+ * - Controller: Uses context to decide nextAction, can set toolName/toolInput
+ * - Tool: Uses toolName/toolInput, fills in toolResults
+ * - Answer: Uses toolResults to fill finalResponse
  */
 
-// Helper reducer for single values - replace with latest, but keep if undefined
 const replaceReducer = (current, latest) => latest !== undefined ? latest : current;
 
-// Helper reducer for goal - preserve if not explicitly set
-const goalReducer = (current, latest) => {
-  if (latest !== undefined && latest !== null) return latest;
-  return current; // Keep existing goal if new value is undefined/null
-};
-
-// Helper reducer for array appending
-const appendReducer = (current = [], update) => {
+const mergeArrayReducer = (current = [], update) => {
   if (Array.isArray(update)) return update;
   return [...current, update];
 };
 
-// Helper reducer for array merge
-const mergeArrayReducer = (current = [], update) => {
-  if (Array.isArray(update)) return [...current, ...update];
-  return [...current, update];
-};
-
 export const AgentStateAnnotation = Annotation.Root({
-  // User context
+  // ═══════════════════════════════════════════════════════════
+  // INPUT
+  // ═══════════════════════════════════════════════════════════
   userMessage: Annotation({
     reducer: replaceReducer
   }),
 
-  // Conversation history
+  // ═══════════════════════════════════════════════════════════
+  // CONVERSATION HISTORY
+  // ═══════════════════════════════════════════════════════════
   messages: Annotation({
     reducer: (current = [], update) => {
       if (Array.isArray(update)) return update;
@@ -42,12 +35,14 @@ export const AgentStateAnnotation = Annotation.Root({
     }
   }),
 
-  // Extracted information
-  partNumber: Annotation({
+  // ═══════════════════════════════════════════════════════════
+  // MEMORY - Extracted Information
+  // ═══════════════════════════════════════════════════════════
+  productModel: Annotation({
     reducer: replaceReducer
   }),
 
-  productModel: Annotation({
+  partNumber: Annotation({
     reducer: replaceReducer
   }),
 
@@ -55,32 +50,47 @@ export const AgentStateAnnotation = Annotation.Root({
     reducer: mergeArrayReducer
   }),
 
-  // Intent/Goal - use special reducer to preserve goal if not explicitly updated
   goalType: Annotation({
-    reducer: goalReducer
-  }),
-
-  // Tool results
-  toolResults: Annotation({
-    reducer: appendReducer
-  }),
-
-  // Final response
-  finalResponse: Annotation({
     reducer: replaceReducer
   }),
 
-  // Track last action for debugging
-  lastAction: Annotation({
+  // ═══════════════════════════════════════════════════════════
+  // EXTRACTION RESULTS - What the Extractor found
+  // ═══════════════════════════════════════════════════════════
+  lastExtraction: Annotation({
     reducer: replaceReducer
   }),
 
-  // For tool calling
+  // ═══════════════════════════════════════════════════════════
+  // CONTROLLER STATE - Decision making
+  // ═══════════════════════════════════════════════════════════
+  controllerDecision: Annotation({
+    reducer: replaceReducer
+  }),
+
+  nextAction: Annotation({
+    reducer: replaceReducer
+  }),
+
+  // ═══════════════════════════════════════════════════════════
+  // TOOL EXECUTION
+  // ═══════════════════════════════════════════════════════════
   toolName: Annotation({
     reducer: replaceReducer
   }),
 
   toolInput: Annotation({
+    reducer: replaceReducer
+  }),
+
+  toolResults: Annotation({
+    reducer: replaceReducer
+  }),
+
+  // ═══════════════════════════════════════════════════════════
+  // FINAL OUTPUT
+  // ═══════════════════════════════════════════════════════════
+  finalResponse: Annotation({
     reducer: replaceReducer
   })
 });
