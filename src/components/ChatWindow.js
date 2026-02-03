@@ -23,14 +23,14 @@ function ChatWindow() {
       scrollToBottom();
   }, [messages]);
 
-  const handleSend = async (input) => {
-    if (input.trim() !== "") {
+  const handleSend = async (messageText) => {
+    if (messageText && messageText.trim() !== "") {
       // Set user message
-      setMessages(prevMessages => [...prevMessages, { role: "user", content: input }]);
+      setMessages(prevMessages => [...prevMessages, { role: "user", content: messageText }]);
       setInput("");
 
       // Call API & set assistant message
-      const newMessage = await getAIMessage(input);
+      const newMessage = await getAIMessage(messageText);
       setMessages(prevMessages => [...prevMessages, newMessage]);
     }
   };
@@ -60,7 +60,7 @@ function ChatWindow() {
               }}
               rows="3"
             />
-            <button className="send-button" onClick={handleSend}>
+            <button className="send-button" onClick={() => handleSend(input)}>
               Send
             </button>
           </div>
