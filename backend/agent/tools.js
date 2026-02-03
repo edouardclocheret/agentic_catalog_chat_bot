@@ -46,35 +46,27 @@ function isPartCompatible(partNumber, model, partsData) {
  * Diagnose repair needs from symptoms
  */
 function diagnoseFromSymptoms(model, symptoms, partsData) {
-  console.log(`\n[DIAGNOSIS] Called with model: ${model}, symptoms: ${JSON.stringify(symptoms)}`);
-  
   if (!partsData[model]) {
-    console.log(`[DIAGNOSIS] Model not found: ${model}`);
     return `Model ${model} not found in database`;
   }
 
   const modelParts = partsData[model].parts || {};
   const suggestedParts = [];
 
-  console.log(`[DIAGNOSIS] Searching ${Object.keys(modelParts).length} parts for matches...`);
-
-  // Normalize function: replace curly quotes and other variants with standard apostrophe
+  // Normalize function: replace curly quotes and variants with standard apostrophe
   const normalizeString = (str) => {
     return str
-      .replace(/['']/g, "'")  // Replace curly quotes with regular apostrophe
+      .replace(/['']/g, "'")
       .toLowerCase()
       .trim();
   };
 
-  // Normalize user symptoms once
   const normalizedUserSymptoms = symptoms.map(normalizeString);
 
-  // Search through all parts for this model and find matches
+  // Search for parts that match user symptoms
   for (const [partNum, partData] of Object.entries(modelParts)) {
-    // Use solves_symptoms field from the parts data
     const partSymptoms = (partData.solves_symptoms || []);
     
-    // Check if any user symptom matches any of this part's solves_symptoms
     const hasMatch = normalizedUserSymptoms.some(normalizedUserSymptom =>
       partSymptoms.some(partSymptom => {
         const normalizedPartSymptom = normalizeString(partSymptom);
@@ -83,7 +75,6 @@ function diagnoseFromSymptoms(model, symptoms, partsData) {
     );
 
     if (hasMatch) {
-      console.log(`[DIAGNOSIS]   ✓ Part ${partNum} matches`);
       suggestedParts.push({
         partNumber: partNum,
         name: partData.name,
@@ -95,9 +86,6 @@ function diagnoseFromSymptoms(model, symptoms, partsData) {
     }
   }
 
-  console.log(`[DIAGNOSIS] Found ${suggestedParts.length} matching parts`);
-
-  // Keep only top 3 matches
   const topParts = suggestedParts.slice(0, 3);
 
   if (topParts.length === 0) {
@@ -195,19 +183,14 @@ export const getInstallationsTool = tool(
  */
 export const emailSummaryTool = tool(
   async ({ email, conversationSummary }) => {
-    console.log(`[EMAIL] Sending summary to: ${email}`);
-    
     try {
-      // Get transporter (will validate credentials)
       const emailTransporter = getTransporter();
 
-      // Format the conversation summary into pretty HTML (remove JSON objects)
+      // Clean and format conversation summary into HTML
       let cleanSummary = conversationSummary
-        // Remove JSON objects and code blocks
         .replace(/\{[\s\S]*?\}/g, '')
         .replace(/```[\s\S]*?```/g, '')
         .replace(/`[^`]*`/g, '')
-        // Clean up extra whitespace
         .split('\n')
         .filter(line => line.trim().length > 0)
         .join('\n');
@@ -229,7 +212,7 @@ export const emailSummaryTool = tool(
         })
         .join('');
 
-      // Send email with formatted HTML
+      // Send email
       await emailTransporter.sendMail({
         from: process.env.EMAIL_USER,
         to: email,
@@ -285,8 +268,6 @@ export const emailSummaryTool = tool(
           </html>
         `
       });
-
-      console.log(`[EMAIL] ✓ Successfully sent to ${email}`);
       
       return JSON.stringify({
         success: true,
@@ -295,7 +276,7 @@ export const emailSummaryTool = tool(
         timestamp: new Date().toISOString()
       }, null, 2);
     } catch (error) {
-      console.error(`[EMAIL] ✗ Failed to send email:`, error.message);
+      console.error("[EMAIL] Error:", error.message);
       
       return JSON.stringify({
         success: false,

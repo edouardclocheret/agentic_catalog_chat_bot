@@ -10,14 +10,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Session management
+// In-memory session storage (productionize with database)
 const sessions = {};
 
 /**
  * POST /api/chat
- * Main endpoint for chat interactions
- * Expects: { message, sessionId }
- * Returns: { message, sessionId }
+ * Main chat endpoint
+ * 
+ * Body: { message: string, sessionId?: string }
+ * Response: { message: string, sessionId: string, toolData?: Object }
  */
 app.post("/api/chat", async (req, res) => {
   try {
@@ -31,7 +32,6 @@ app.post("/api/chat", async (req, res) => {
     const id = sessionId || crypto.randomUUID();
 
     if (!sessions[id]) {
-      console.log(`\n[SERVER] Creating NEW session: ${id}`);
       sessions[id] = {
         messages: [],
         partNumber: null,
@@ -41,17 +41,12 @@ app.post("/api/chat", async (req, res) => {
         emailAddress: null,
         lastToolResult: null
       };
-    } else {
-      console.log(`\n[SERVER] Using EXISTING session: ${id}`);
-      console.log(`[SERVER]   Current goalType: ${sessions[id].goalType}`);
     }
 
     const sessionState = sessions[id];
 
-    // Run the agent
+    // Run agent
     const agentResult = await runAgent(sessionState, message);
-
-    console.log(`[SERVER] Updated session goalType: ${sessionState.goalType}`);
 
     res.json({
       message: agentResult.response,
@@ -59,7 +54,7 @@ app.post("/api/chat", async (req, res) => {
       toolData: agentResult.toolData || null
     });
   } catch (error) {
-    console.error("Chat API error:", error);
+    console.error("[API] Error:", error.message);
     res.status(500).json({
       error: "Internal server error",
       message: error.message
@@ -77,7 +72,7 @@ app.get("/health", (req, res) => {
 
 /**
  * GET /api/sessions/:id
- * Get session details (for debugging)
+ * Debug endpoint: retrieve session details
  */
 app.get("/api/sessions/:id", (req, res) => {
   const session = sessions[req.params.id];

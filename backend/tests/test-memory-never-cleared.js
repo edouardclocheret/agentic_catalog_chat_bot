@@ -1,4 +1,4 @@
-import { runAgent } from "./agent/agent.js";
+import { runAgent } from "../agent/agent.js";
 
 async function testMemoryNeverCleared() {
   console.log("🧪 Testing Memory Never Gets Cleared\n");

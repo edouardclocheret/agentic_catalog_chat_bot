@@ -1,4 +1,4 @@
-import { runAgent } from "./agent/agent.js";
+import { runAgent } from "../agent/agent.js";
 
 async function testGoalMemory() {
   console.log("\n" + "=".repeat(70));
