@@ -186,31 +186,64 @@ export const emailSummaryTool = tool(
     try {
       const emailTransporter = getTransporter();
 
-      // Clean and format conversation summary into HTML
+      // Parse conversation summary into structured format
+      let formattedSummary = '';
+      
+      // Check if conversationSummary contains video or image URLs
+      const videoRegex = /youtube\.com\/embed\/([a-zA-Z0-9_-]+)|youtu\.be\/([a-zA-Z0-9_-]+)/g;
+      const imageRegex = /https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp)/gi;
+      
+      const videoMatches = [...conversationSummary.matchAll(videoRegex)];
+      const imageMatches = [...conversationSummary.matchAll(imageRegex)];
+      
+      // Clean text content
       let cleanSummary = conversationSummary
         .replace(/\{[\s\S]*?\}/g, '')
         .replace(/```[\s\S]*?```/g, '')
         .replace(/`[^`]*`/g, '')
+        .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs from text
         .split('\n')
         .filter(line => line.trim().length > 0)
         .join('\n');
 
-      const formattedSummary = cleanSummary
+      // Build HTML sections
+      formattedSummary = cleanSummary
         .split('\n')
         .map(line => {
-          if (!line.trim()) return '<br>';
+          if (!line.trim()) return '';
           if (line.startsWith('**')) {
-            return `<h3 style="color: #1b3875; margin-top: 15px; margin-bottom: 8px;">${line.replace(/\*\*/g, '')}</h3>`;
+            return `<h3 style="color: #337778; margin-top: 15px; margin-bottom: 8px; font-size: 18px; font-weight: 600;">${line.replace(/\*\*/g, '')}</h3>`;
           }
           if (line.startsWith('- ')) {
-            return `<li style="margin: 6px 0;">${line.substring(2)}</li>`;
+            return `<li style="margin: 8px 0; color: #333;">${line.substring(2)}</li>`;
           }
-          if (line.includes('http') || line.includes('.jpg') || line.includes('.png')) {
-            return `<img src="${line.trim()}" style="max-width: 100%; height: auto; margin: 10px 0; border-radius: 4px;" alt="Conversation image">`;
-          }
-          return `<p style="margin: 10px 0;">${line}</p>`;
+          return `<p style="margin: 12px 0; color: #555; line-height: 1.6;">${line}</p>`;
         })
         .join('');
+
+      // Add videos section if any
+      if (videoMatches.length > 0) {
+        formattedSummary += `
+          <h3 style="color: #337778; margin-top: 20px; margin-bottom: 12px; font-size: 18px; font-weight: 600;">📹 Installation Videos</h3>
+          ${videoMatches.map(match => {
+            const videoId = match[1] || match[2];
+            const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+            return `<p style="margin: 10px 0;"><a href="${videoUrl}" style="color: #337778; text-decoration: none; font-weight: 500;">▶ Watch Installation Video</a></p>`;
+          }).join('')}
+        `;
+      }
+
+      // Add images section if any
+      if (imageMatches.length > 0) {
+        formattedSummary += `
+          <h3 style="color: #337778; margin-top: 20px; margin-bottom: 12px; font-size: 18px; font-weight: 600;">📸 Part Images</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+            ${imageMatches.map(match => {
+              return `<img src="${match[0]}" style="max-width: 100%; height: auto; border-radius: 6px; border: 1px solid #ddd;" alt="Part image">`;
+            }).join('')}
+          </div>
+        `;
+      }
 
       // Send email
       await emailTransporter.sendMail({
@@ -224,21 +257,25 @@ export const emailSummaryTool = tool(
               <meta charset="UTF-8">
               <style>
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; }
-                .container { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 40px 20px; min-height: 100vh; }
-                .email-wrapper { background-color: white; max-width: 600px; margin: 0 auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden; }
-                .header { background: linear-gradient(135deg, #1b3875 0%, #2d5a9e 100%); color: white; padding: 40px 20px; text-align: center; }
+                .container { background-color: #f3c04c; padding: 40px 20px; min-height: 100vh; }
+                .email-wrapper { background-color: white; max-width: 700px; margin: 0 auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden; }
+                .header { background-color: #337778; color: white; padding: 40px 20px; text-align: center; }
                 .header h2 { margin: 0; font-size: 28px; font-weight: 600; }
                 .header p { margin: 8px 0 0 0; font-size: 14px; opacity: 0.9; }
                 .content { padding: 40px 30px; }
-                .intro { font-size: 16px; color: #555; margin-bottom: 20px; line-height: 1.8; }
-                .summary-section { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 25px; border-left: 5px solid #1b3875; border-radius: 8px; margin: 20px 0; }
-                .summary-section h3 { color: #1b3875; margin-top: 0; margin-bottom: 12px; font-size: 18px; }
+                .intro { font-size: 16px; color: #555; margin-bottom: 25px; line-height: 1.8; }
+                .summary-section { background-color: #f9f9f9; padding: 30px; border-left: 5px solid #337778; border-radius: 8px; margin: 25px 0; }
+                .summary-section h3 { color: #337778; margin-top: 0; margin-bottom: 12px; font-size: 18px; }
                 .summary-section ul { margin: 10px 0; padding-left: 20px; }
                 .summary-section li { margin: 8px 0; color: #333; }
-                .summary-section p { margin: 10px 0; color: #555; }
-                .summary-section img { margin: 15px 0; border-radius: 6px; }
+                .summary-section p { margin: 12px 0; color: #555; line-height: 1.6; }
+                .summary-section img { max-width: 100%; height: auto; margin: 15px 0; border-radius: 6px; border: 1px solid #ddd; }
+                .summary-section iframe { border-radius: 6px; border: 1px solid #ddd; }
+                .video-section { margin-top: 25px; }
+                .images-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 15px; }
+                .images-grid img { max-width: 100%; height: auto; border-radius: 6px; border: 1px solid #ddd; }
                 .footer { background-color: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; }
-                .footer a { color: #1b3875; text-decoration: none; }
+                .footer a { color: #337778; text-decoration: none; font-weight: 500; }
               </style>
             </head>
             <body>

@@ -45,7 +45,7 @@
 .user-message {
   align-self: flex-end;
   font-size: 13px;
-  background-color: #1b3875;
+  background-color: #337778;
   color: #ffffff;
   border-top-right-radius: 0;
   text-align: left;
@@ -104,7 +104,7 @@
   padding: 10px 20px;
   border: none;
   border-radius: 5px;
-  background-color: #121212;
+  background-color: #337778;
   color: white;
   cursor: pointer;
   font-size: 13px;
@@ -231,5 +231,16 @@
   .parts-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Link styling */
+a {
+  color: #f3c04c !important;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+a:hover {
+  color: #d9a838 !important;
 }
 
