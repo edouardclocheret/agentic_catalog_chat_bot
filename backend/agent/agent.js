@@ -57,12 +57,14 @@ export async function runAgent(sessionState, userMessage) {
     sessionState.partNumber = output.partNumber !== undefined ? output.partNumber : sessionState.partNumber;
     sessionState.symptoms = output.symptoms !== undefined ? output.symptoms : (sessionState.symptoms || []);
     sessionState.goalType = output.goalType !== undefined ? output.goalType : sessionState.goalType;
+    sessionState.emailAddress = output.emailAddress !== undefined ? output.emailAddress : sessionState.emailAddress;
     sessionState.lastToolResult = output.lastToolResult || null;
 
     console.log(`\n[AGENT] Session state after update:`);
     console.log(`  productModel: ${sessionState.productModel}`);
     console.log(`  partNumber: ${sessionState.partNumber}`);
     console.log(`  goalType: ${sessionState.goalType}`);
+    console.log(`  emailAddress: ${sessionState.emailAddress}`);
     console.log(`  symptoms: ${JSON.stringify(sessionState.symptoms)}`);
     console.log(`  lastToolResult:`, sessionState.lastToolResult);
 

@@ -37,7 +37,9 @@ app.post("/api/chat", async (req, res) => {
         partNumber: null,
         productModel: null,
         symptoms: [],
-        goalType: null
+        goalType: null,
+        emailAddress: null,
+        lastToolResult: null
       };
     } else {
       console.log(`\n[SERVER] Using EXISTING session: ${id}`);

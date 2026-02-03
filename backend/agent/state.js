@@ -54,6 +54,10 @@ export const AgentStateAnnotation = Annotation.Root({
     reducer: replaceReducer
   }),
 
+  emailAddress: Annotation({
+    reducer: replaceReducer
+  }),
+
   // ═══════════════════════════════════════════════════════════
   // EXTRACTION RESULTS - What the Extractor found
   // ═══════════════════════════════════════════════════════════

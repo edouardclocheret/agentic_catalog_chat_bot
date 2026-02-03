@@ -37,6 +37,7 @@ Ask them what help they need in a friendly way. Mention you can help with:
 1. Installation instructions for parts
 2. Checking part compatibility  
 3. Diagnosing and fixing problems
+4. Emailing a summary of your conversation
 
 Be concise and friendly.`;
   }
@@ -59,6 +60,8 @@ The user has already provided:`;
       prompt += `\n\nFor diagnosing issues, ONLY ask for the missing appliance model. Be brief and direct. One sentence max.`;
     } else if (goalType === "install_instruction" || goalType === "check_compatibility") {
       prompt += `\n\nFor installation or compatibility, ONLY ask for the missing model/part number. Be brief. One sentence max.`;
+    } else if (goalType === "email_summary") {
+      prompt += `\n\nFor emailing a summary, ONLY ask for the missing email address. Be brief. One sentence max.`;
     }
 
     return prompt;
@@ -115,6 +118,7 @@ Goals (only if explicitly stated in current message):
 - "diagnose_repair" if user says: fix, troubleshoot, diagnose, what's wrong, repair
 - "install_instruction" if user says: install, how to install, replacement, replace
 - "check_compatibility" if user says: compatible, will work, fit
+- "email_summary" if user says: save, email, send, share, forward, email me
 - null if user doesn't specify in this message`;
 
   return `Extract from user message:
@@ -122,6 +126,7 @@ ${modelInstruction}
 ${partInstruction}
 - symptoms: list of problems or []
 ${goalInstruction}
+- email: user's email address if they provide one in THIS message, or null
 
 Symptom mapping (match user's description to one of these exact terms):
 - "Not cleaning dishes properly" if user mentions: not clean, dirty, residue, not washing
@@ -138,7 +143,8 @@ Return JSON ONLY:
   "model": null,
   "part": null,
   "symptoms": [],
-  "goal": null
+  "goal": null,
+  "email": null
 }`;
 }
 
@@ -172,6 +178,9 @@ async function extractNode(state) {
     }
 
     console.log(`\n  📝 LLM extracted:`, JSON.stringify(extracted, null, 2));
+    console.log(`  📝 CURRENT STATE goalType: ${state.goalType}`);
+    console.log(`  📝 USER MESSAGE: "${state.userMessage}"`);
+    console.log(`  📝 EXTRACTED goal: ${extracted.goal}`);
 
     // IMPORTANT: Memory update strategy
     // 1. Always preserve ALL existing memory as base
@@ -226,16 +235,27 @@ async function extractNode(state) {
       }
     }
 
-    // Goal - Update ONLY if LLM extracted a non-null value, otherwise preserve
+    // Goal - Update ONLY if LLM extracted a non-null value, otherwise preserve ONLY if one exists
     if (extracted.goal !== null && extracted.goal !== undefined) {
       updates.goalType = extracted.goal;
-      console.log(`  ✓ Goal updated → memory: ${extracted.goal}`);
+      console.log(`  ✓ Goal UPDATED → memory: "${extracted.goal}"`);
     } else {
-      // Always preserve existing goal (never set to null)
+      // Preserve existing goal ONLY if it exists, otherwise explicitly set to null
       updates.goalType = state.goalType || null;
       if (state.goalType) {
-        console.log(`  🔒 Goal preserved: ${state.goalType}`);
+        console.log(`  🔒 Goal preserved: "${state.goalType}"`);
+      } else {
+        console.log(`  🔒 Goal remains null (no previous goal, none extracted)`);
       }
+    }
+
+    // Email - Update if LLM extracted a valid email
+    if (extracted.email !== null && extracted.email !== undefined) {
+      updates.emailAddress = extracted.email;
+      console.log(`  ✓ Email updated → memory: ${extracted.email}`);
+    } else {
+      // Always preserve existing email
+      updates.emailAddress = state.emailAddress || null;
     }
 
     // Log final state after extraction processing
@@ -243,6 +263,7 @@ async function extractNode(state) {
     console.log(`     Model: ${updates.productModel || "null"}`);
     console.log(`     Part: ${updates.partNumber || "null"}`);
     console.log(`     Goal: ${updates.goalType || "null"}`);
+    console.log(`     Email: ${updates.emailAddress || "null"}`);
     console.log(`     Symptoms: ${updates.symptoms?.length > 0 ? updates.symptoms.join(", ") : "[]"}`);
 
     return updates;
@@ -254,7 +275,8 @@ async function extractNode(state) {
       productModel: state.productModel,
       partNumber: state.partNumber,
       symptoms: state.symptoms,
-      goalType: state.goalType
+      goalType: state.goalType,
+      emailAddress: state.emailAddress
     };
   }
 }
@@ -264,12 +286,14 @@ async function extractNode(state) {
  */
 function checkGoalRouter(state) {
   // Step 1: Is there a goal in memory?
-  if (!state.goalType) {
-    console.log(`[ROUTER] No goal in memory → ASK_GOAL`);
+  const hasGoal = state.goalType && state.goalType !== "";
+  
+  if (!hasGoal) {
+    console.log(`[ROUTER] ❌ No goal in memory (goalType="${state.goalType}") → ASK_GOAL`);
     return "ask_goal";
   }
 
-  console.log(`[ROUTER] Goal in memory: ${state.goalType} → CHECK_REQUIREMENTS`);
+  console.log(`[ROUTER] ✓ Goal in memory: "${state.goalType}" → CHECK_REQUIREMENTS`);
   return "check_requirements";
 }
 
@@ -319,17 +343,20 @@ function checkRequirementsRouter(state) {
   const hasModel = !!state.productModel;
   const hasPart = !!state.partNumber;
   const hasSymptoms = state.symptoms && state.symptoms.length > 0;
+  const hasEmail = !!state.emailAddress;
 
   console.log(`[CHECK] Checking MEMORY for goal: ${goal}`);
-  console.log(`[CHECK]   Model in memory: ${state.productModel || "none"} (required: true)`);
-  console.log(`[CHECK]   Part in memory: ${state.partNumber || "none"} (required: true)`);
+  console.log(`[CHECK]   Model in memory: ${state.productModel || "none"} (required: diagnose/install/compat)`);
+  console.log(`[CHECK]   Part in memory: ${state.partNumber || "none"} (required: install/compat)`);
   console.log(`[CHECK]   Symptoms in memory: ${state.symptoms?.join(", ") || "none"}`);
+  console.log(`[CHECK]   Email in memory: ${state.emailAddress || "none"} (required: email_summary)`);
 
   // Define what each goal needs
   const requirements = {
-    install_instruction: { model: true, part: true, symptoms: false },
-    check_compatibility: { model: true, part: true, symptoms: false },
-    diagnose_repair: { model: true, part: false, symptoms: true }
+    install_instruction: { model: true, part: true, symptoms: false, email: false },
+    check_compatibility: { model: true, part: true, symptoms: false, email: false },
+    diagnose_repair: { model: true, part: false, symptoms: true, email: false },
+    email_summary: { model: false, part: false, symptoms: false, email: true }
   };
 
   const needed = requirements[goal] || {};
@@ -338,6 +365,7 @@ function checkRequirementsRouter(state) {
   if (needed.model && !hasModel) missing.push("appliance model");
   if (needed.part && !hasPart) missing.push("part number");
   if (needed.symptoms && !hasSymptoms) missing.push("symptoms");
+  if (needed.email && !hasEmail) missing.push("email address");
 
   if (missing.length > 0) {
     console.log(`[CHECK] Missing in memory: ${missing.join(", ")} → ASK_INFO`);
@@ -398,10 +426,10 @@ async function askInfoNode(state) {
 async function executeToolNode(state) {
   logMemoryState(state, "EXECUTE TOOL");
   
-  const { goalType, productModel, partNumber, symptoms } = state;
+  const { goalType, productModel, partNumber, symptoms, emailAddress, messages } = state;
 
   console.log(`\n[EXECUTE] Calling tool for goal: ${goalType}`);
-  console.log(`  Model: ${productModel}, Part: ${partNumber}, Symptoms: ${symptoms?.join(", ")}`);
+  console.log(`  Model: ${productModel}, Part: ${partNumber}, Symptoms: ${symptoms?.join(", ")}, Email: ${emailAddress}`);
 
   let toolName, toolInput;
 
@@ -414,6 +442,13 @@ async function executeToolNode(state) {
   } else if (goalType === "check_compatibility") {
     toolName = "check_compatibility";
     toolInput = { partNumber, model: productModel };
+  } else if (goalType === "email_summary") {
+    toolName = "email_summary";
+    // Build conversation summary from messages
+    const conversationSummary = messages
+      .map(m => `${m.role === "user" ? "You" : "Agent"}: ${m.content}`)
+      .join("\n\n");
+    toolInput = { email: emailAddress, conversationSummary };
   }
 
   if (!toolName || !toolMap[toolName]) {
@@ -480,6 +515,7 @@ async function executeToolNode(state) {
       productModel: state.productModel,
       partNumber: state.partNumber,
       symptoms: state.symptoms,
+      emailAddress: state.emailAddress,
       goalType: null,  // CLEAR goal after tool execution
       lastExtraction: state.lastExtraction
     };
@@ -493,6 +529,7 @@ async function executeToolNode(state) {
       productModel: state.productModel,
       partNumber: state.partNumber,
       symptoms: state.symptoms,
+      emailAddress: state.emailAddress,
       goalType: null,  // CLEAR goal after tool execution even on error
       lastExtraction: state.lastExtraction
     };

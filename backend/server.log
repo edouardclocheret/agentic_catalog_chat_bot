@@ -1,0 +1,257 @@
+[LANGGRAPH] Graph structure initialized
+🧠 PartSelect Chat Agent running on http://localhost:3001
+📝 Health check: http://localhost:3001/health
+
+[SERVER] Creating NEW session: acf04729-edb9-4abe-b7b5-fde49486fab5
+
+============================================================
+[SESSION] Model: null, Part: null, Goal: null
+============================================================
+
+[EXTRACT] Parsing message...
+
+[EXTRACT START] MEMORY & EXTRACTION STATE:
+  📦 MEMORY:
+     Model: null
+     Part: null
+     Goal: null
+     Symptoms: []
+
+  📝 LLM extracted: {
+  "model": "WDT780SAEM1",
+  "part": "PS3406971",
+  "symptoms": [],
+  "goal": "check_compatibility",
+  "email": null
+}
+  📝 CURRENT STATE goalType: null
+  📝 USER MESSAGE: "Can you tell me if this part PS3406971 is compatible with WDT780SAEM1 ?"
+  📝 EXTRACTED goal: check_compatibility
+  ✓ Model updated → memory: WDT780SAEM1
+  ✓ Part updated → memory: PS3406971
+  ✓ Goal UPDATED → memory: "check_compatibility"
+
+  ✅ EXTRACT node complete - Updated memory:
+     Model: WDT780SAEM1
+     Part: PS3406971
+     Goal: check_compatibility
+     Email: null
+     Symptoms: []
+[ROUTER] ✓ Goal in memory: "check_compatibility" → CHECK_REQUIREMENTS
+
+[CHECK REQUIREMENTS] MEMORY & EXTRACTION STATE:
+  📦 MEMORY:
+     Model: WDT780SAEM1
+     Part: PS3406971
+     Goal: check_compatibility
+     Symptoms: []
+  🔍 LAST EXTRACTION:
+     Model: WDT780SAEM1
+     Part: PS3406971
+     Goal: check_compatibility
+     Symptoms: []
+[CHECK] Checking MEMORY for goal: check_compatibility
+[CHECK]   Model in memory: WDT780SAEM1 (required: diagnose/install/compat)
+[CHECK]   Part in memory: PS3406971 (required: install/compat)
+[CHECK]   Symptoms in memory: none
+[CHECK]   Email in memory: none (required: email_summary)
+[CHECK] ✓ All requirements found in memory → EXECUTE_TOOL
+
+[EXECUTE TOOL] MEMORY & EXTRACTION STATE:
+  📦 MEMORY:
+     Model: WDT780SAEM1
+     Part: PS3406971
+     Goal: check_compatibility
+     Symptoms: []
+  🔍 LAST EXTRACTION:
+     Model: WDT780SAEM1
+     Part: PS3406971
+     Goal: check_compatibility
+     Symptoms: []
+
+[EXECUTE] Calling tool for goal: check_compatibility
+  Model: WDT780SAEM1, Part: PS3406971, Symptoms: , Email: null
+  Calling tool: check_compatibility
+  ✓ Tool executed
+  Tool result: ✓ Part PS3406971 IS compatible with model WDT780SAEM1
+  ✗ Could not parse as JSON, keeping as string
+
+[AGENT] Full output from graph: {
+  "userMessage": "",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Can you tell me if this part PS3406971 is compatible with WDT780SAEM1 ?"
+    },
+    {
+      "role": "tool",
+      "content": "✓ Part PS3406971 IS compatible with model WDT780SAEM1"
+    },
+    {
+      "role": "assistant",
+      "content": "The part PS3406971 is compatible with your model WDT780SAEM1."
+    }
+  ],
+  "productModel": "WDT780SAEM1",
+  "partNumber": "PS3406971",
+  "symptoms": [],
+  "goalType": null,
+  "emailAddress": null,
+  "lastExtraction": {
+    "model": "WDT780SAEM1",
+    "part": "PS3406971",
+    "symptoms": [],
+    "goal": "check_compatibility",
+    "email": null
+  },
+  "finalResponse": "The part PS3406971 is compatible with your model WDT780SAEM1.",
+  "lastToolResult": {
+    "toolName": "check_compatibility",
+    "data": "✓ Part PS3406971 IS compatible with model WDT780SAEM1"
+  }
+}
+
+[AGENT] Output from graph:
+  productModel: WDT780SAEM1
+  partNumber: PS3406971
+  goalType: null
+  symptoms: []
+
+[AGENT] Session state after update:
+  productModel: WDT780SAEM1
+  partNumber: PS3406971
+  goalType: null
+  emailAddress: null
+  symptoms: []
+  lastToolResult: {
+  toolName: 'check_compatibility',
+  data: '✓ Part PS3406971 IS compatible with model WDT780SAEM1'
+}
+[SERVER] Updated session goalType: null
+
+[SERVER] Using EXISTING session: acf04729-edb9-4abe-b7b5-fde49486fab5
+[SERVER]   Current goalType: null
+
+============================================================
+[SESSION] Model: WDT780SAEM1, Part: PS3406971, Goal: null
+============================================================
+
+[EXTRACT] Parsing message...
+
+[EXTRACT START] MEMORY & EXTRACTION STATE:
+  📦 MEMORY:
+     Model: WDT780SAEM1
+     Part: PS3406971
+     Goal: null
+     Symptoms: []
+
+  📝 LLM extracted: {
+  "model": null,
+  "part": null,
+  "symptoms": [],
+  "goal": "email_summary",
+  "email": "email me"
+}
+  📝 CURRENT STATE goalType: null
+  📝 USER MESSAGE: "Can you email me this conversation?"
+  📝 EXTRACTED goal: email_summary
+  🔒 Model preserved: WDT780SAEM1
+  🔒 Part preserved: PS3406971
+  ✓ Goal UPDATED → memory: "email_summary"
+  ✓ Email updated → memory: email me
+
+  ✅ EXTRACT node complete - Updated memory:
+     Model: WDT780SAEM1
+     Part: PS3406971
+     Goal: email_summary
+     Email: email me
+     Symptoms: []
+[ROUTER] ✓ Goal in memory: "email_summary" → CHECK_REQUIREMENTS
+
+[CHECK REQUIREMENTS] MEMORY & EXTRACTION STATE:
+  📦 MEMORY:
+     Model: WDT780SAEM1
+     Part: PS3406971
+     Goal: email_summary
+     Symptoms: []
+  🔍 LAST EXTRACTION:
+     Model: null
+     Part: null
+     Goal: email_summary
+     Symptoms: []
+[CHECK] Checking MEMORY for goal: email_summary
+[CHECK]   Model in memory: WDT780SAEM1 (required: diagnose/install/compat)
+[CHECK]   Part in memory: PS3406971 (required: install/compat)
+[CHECK]   Symptoms in memory: none
+[CHECK]   Email in memory: email me (required: email_summary)
+[CHECK] ✓ All requirements found in memory → EXECUTE_TOOL
+
+[EXECUTE TOOL] MEMORY & EXTRACTION STATE:
+  📦 MEMORY:
+     Model: WDT780SAEM1
+     Part: PS3406971
+     Goal: email_summary
+     Symptoms: []
+  🔍 LAST EXTRACTION:
+     Model: null
+     Part: null
+     Goal: email_summary
+     Symptoms: []
+
+[EXECUTE] Calling tool for goal: email_summary
+  Model: WDT780SAEM1, Part: PS3406971, Symptoms: , Email: email me
+  Calling tool: email_summary
+  [ERROR] Tool execution failed: Received tool input did not match expected schema
+
+✖ Invalid email
+  → at email
+
+[AGENT] Full output from graph: {
+  "userMessage": "",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Can you tell me if this part PS3406971 is compatible with WDT780SAEM1 ?"
+    },
+    {
+      "role": "tool",
+      "content": "✓ Part PS3406971 IS compatible with model WDT780SAEM1"
+    },
+    {
+      "role": "assistant",
+      "content": "The part PS3406971 is compatible with your model WDT780SAEM1."
+    },
+    {
+      "role": "user",
+      "content": "Can you email me this conversation?"
+    }
+  ],
+  "productModel": "WDT780SAEM1",
+  "partNumber": "PS3406971",
+  "symptoms": [],
+  "goalType": null,
+  "emailAddress": "email me",
+  "lastExtraction": {
+    "model": null,
+    "part": null,
+    "symptoms": [],
+    "goal": "email_summary",
+    "email": "email me"
+  },
+  "finalResponse": "Error: Received tool input did not match expected schema\n\n✖ Invalid email\n  → at email"
+}
+
+[AGENT] Output from graph:
+  productModel: WDT780SAEM1
+  partNumber: PS3406971
+  goalType: null
+  symptoms: []
+
+[AGENT] Session state after update:
+  productModel: WDT780SAEM1
+  partNumber: PS3406971
+  goalType: null
+  emailAddress: email me
+  symptoms: []
+  lastToolResult: null
+[SERVER] Updated session goalType: null

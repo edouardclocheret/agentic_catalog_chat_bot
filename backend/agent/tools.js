@@ -1,9 +1,30 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import fs from "fs";
+import nodemailer from "nodemailer";
 
 // Load parts data
 const partsData = JSON.parse(fs.readFileSync("./data/parts.json"));
+
+// Lazy-loaded email transporter (initialized on first use)
+let transporter = null;
+
+function getTransporter() {
+  if (!transporter) {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      throw new Error("Email credentials not configured. Please set EMAIL_USER and EMAIL_PASSWORD in .env");
+    }
+    
+    transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+  }
+  return transporter;
+}
 
 /**
  * COMPATIBILITY TOOL LOGIC
@@ -170,12 +191,138 @@ export const getInstallationsTool = tool(
 );
 
 /**
+ * Tool: Email conversation summary
+ */
+export const emailSummaryTool = tool(
+  async ({ email, conversationSummary }) => {
+    console.log(`[EMAIL] Sending summary to: ${email}`);
+    
+    try {
+      // Get transporter (will validate credentials)
+      const emailTransporter = getTransporter();
+
+      // Format the conversation summary into pretty HTML (remove JSON objects)
+      let cleanSummary = conversationSummary
+        // Remove JSON objects and code blocks
+        .replace(/\{[\s\S]*?\}/g, '')
+        .replace(/```[\s\S]*?```/g, '')
+        .replace(/`[^`]*`/g, '')
+        // Clean up extra whitespace
+        .split('\n')
+        .filter(line => line.trim().length > 0)
+        .join('\n');
+
+      const formattedSummary = cleanSummary
+        .split('\n')
+        .map(line => {
+          if (!line.trim()) return '<br>';
+          if (line.startsWith('**')) {
+            return `<h3 style="color: #1b3875; margin-top: 15px; margin-bottom: 8px;">${line.replace(/\*\*/g, '')}</h3>`;
+          }
+          if (line.startsWith('- ')) {
+            return `<li style="margin: 6px 0;">${line.substring(2)}</li>`;
+          }
+          if (line.includes('http') || line.includes('.jpg') || line.includes('.png')) {
+            return `<img src="${line.trim()}" style="max-width: 100%; height: auto; margin: 10px 0; border-radius: 4px;" alt="Conversation image">`;
+          }
+          return `<p style="margin: 10px 0;">${line}</p>`;
+        })
+        .join('');
+
+      // Send email with formatted HTML
+      await emailTransporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "Your PartSelect Support Conversation Summary",
+        html: `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8">
+              <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; }
+                .container { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 40px 20px; min-height: 100vh; }
+                .email-wrapper { background-color: white; max-width: 600px; margin: 0 auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden; }
+                .header { background: linear-gradient(135deg, #1b3875 0%, #2d5a9e 100%); color: white; padding: 40px 20px; text-align: center; }
+                .header h2 { margin: 0; font-size: 28px; font-weight: 600; }
+                .header p { margin: 8px 0 0 0; font-size: 14px; opacity: 0.9; }
+                .content { padding: 40px 30px; }
+                .intro { font-size: 16px; color: #555; margin-bottom: 20px; line-height: 1.8; }
+                .summary-section { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 25px; border-left: 5px solid #1b3875; border-radius: 8px; margin: 20px 0; }
+                .summary-section h3 { color: #1b3875; margin-top: 0; margin-bottom: 12px; font-size: 18px; }
+                .summary-section ul { margin: 10px 0; padding-left: 20px; }
+                .summary-section li { margin: 8px 0; color: #333; }
+                .summary-section p { margin: 10px 0; color: #555; }
+                .summary-section img { margin: 15px 0; border-radius: 6px; }
+                .footer { background-color: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; }
+                .footer a { color: #1b3875; text-decoration: none; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="email-wrapper">
+                  <div class="header">
+                    <h2>📋 PartSelect Support Summary</h2>
+                    <p>Your conversation has been archived</p>
+                  </div>
+                  <div class="content">
+                    <p class="intro">Thank you for using PartSelect support! Below is a complete summary of your conversation, recommendations, and any resources we discussed:</p>
+                    <div class="summary-section">
+                      ${formattedSummary}
+                    </div>
+                  </div>
+                  <div class="footer">
+                    <p style="margin: 0 0 10px 0;">
+                      <strong>Need more help?</strong> Visit <a href="https://partselect.com">partselect.com</a> or contact our support team.
+                    </p>
+                    <p style="margin: 0; opacity: 0.7;">
+                      This is an automated email. Please don't reply directly to this address.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </body>
+          </html>
+        `
+      });
+
+      console.log(`[EMAIL] ✓ Successfully sent to ${email}`);
+      
+      return JSON.stringify({
+        success: true,
+        email,
+        message: `✓ Conversation summary has been sent to ${email}. Check your inbox for the details.`,
+        timestamp: new Date().toISOString()
+      }, null, 2);
+    } catch (error) {
+      console.error(`[EMAIL] ✗ Failed to send email:`, error.message);
+      
+      return JSON.stringify({
+        success: false,
+        email,
+        message: `✗ Failed to send email: ${error.message}`,
+        error: error.message
+      }, null, 2);
+    }
+  },
+  {
+    name: "email_summary",
+    description: "Email a summary of the conversation to the user",
+    schema: z.object({
+      email: z.string().email().describe("User's email address"),
+      conversationSummary: z.string().describe("Summary of the conversation and recommendations")
+    })
+  }
+);
+
+/**
  * All available tools
  */
 export const tools = [
   checkCompatibilityTool,
   diagnosisTool,
-  getInstallationsTool
+  getInstallationsTool,
+  emailSummaryTool
 ];
 
 /**
@@ -184,5 +331,7 @@ export const tools = [
 export const toolMap = {
   check_compatibility: checkCompatibilityTool,
   diagnose_repair: diagnosisTool,
-  get_installation_instructions: getInstallationsTool
+  get_installation_instructions: getInstallationsTool,
+  email_summary: emailSummaryTool
+
 };
