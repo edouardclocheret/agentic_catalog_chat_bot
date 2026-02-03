@@ -8,13 +8,62 @@ import fs from "fs";
 
 dotenv.config();
 
-const llm = new ChatOpenAI({
+// LLM #1: EXTRACTOR (Silent, structured, controlled)
+const extractorLLM = new ChatOpenAI({
   model: "gpt-4o-mini",
   temperature: 0.1,
   apiKey: process.env.OPENAI_API_KEY
 });
 
+// LLM #2: SPEAKER (Talks to user, follows graph decisions)
+const speakerLLM = new ChatOpenAI({
+  model: "gpt-4o-mini",
+  temperature: 0.7,
+  apiKey: process.env.OPENAI_API_KEY
+});
+
 const partsData = JSON.parse(fs.readFileSync("./data/parts.json"));
+
+/**
+ * SPEAKER PROMPT BUILDER
+ * Takes graph decisions and creates a prompt for the Speaker LLM
+ */
+function makeSpeakerPrompt(intent, state) {
+  const { goalType, productModel, partNumber, symptoms, missing } = intent;
+
+  if (intent.type === "ask_goal") {
+    return `You are a helpful PartSelect support agent. The user hasn't told you what they need yet. 
+Ask them what help they need in a friendly way. Mention you can help with:
+1. Installation instructions for parts
+2. Checking part compatibility  
+3. Diagnosing and fixing problems
+
+Be concise and friendly.`;
+  }
+
+  if (intent.type === "ask_missing") {
+    let prompt = `You are a PartSelect support agent. 
+Goal: ${goalType.replace(/_/g, " ")}
+
+The user has already provided some info:`;
+
+    if (productModel) prompt += `\n- Appliance model: ${productModel}`;
+    if (partNumber) prompt += `\n- Part number: ${partNumber}`;
+    if (symptoms?.length > 0) prompt += `\n- Problems: ${symptoms.join(", ")}`;
+
+    prompt += `\n\nYou ONLY need to ask for the MISSING items:\n${missing.map(m => `- ${m}`).join("\n")}
+
+Ask for ONLY these items. Be specific with examples. Be concise.`;
+
+    return prompt;
+  }
+
+  if (intent.type === "tool_result") {
+    return `You are a PartSelect support agent. Summarize this result for the user in a helpful way. Be concise.`;
+  }
+
+  return "";
+}
 
 /**
  * Utility: Log memory and last extraction side-by-side
@@ -42,17 +91,18 @@ function logMemoryState(state, label = "") {
  * IMPORTANT: Once model, part number, or goal are set in memory, they are LOCKED
  * and will NOT be re-extracted. Only symptoms continue to accumulate.
  */
-function getExtractorPrompt(hasModel, hasPart, hasGoal) {
-  const modelInstruction = hasModel 
-    ? `- model: ALWAYS return null (already locked in memory as model value)`
+function getExtractorPrompt(productModel, partNumber, goalType) {
+  // Only lock fields that actually exist
+  const modelInstruction = productModel
+    ? `- model: ALWAYS return null (already known: ${productModel})`
     : `- model: appliance model (e.g., WDT780SAEM1) or null`;
   
-  const partInstruction = hasPart
-    ? `- part: ALWAYS return null (already locked in memory as part number)`
+  const partInstruction = partNumber
+    ? `- part: ALWAYS return null (already known: ${partNumber})`
     : `- part: part number (e.g., PS3406971) or null`;
   
-  const goalInstruction = hasGoal
-    ? `- goal: ALWAYS return null (already locked in memory as ${hasGoal})`
+  const goalInstruction = goalType
+    ? `- goal: ALWAYS return null (already locked as ${goalType})`
     : `- goal: detected goal from THIS message ONLY, or null (do NOT use memory goal)
 
 Goals (only if explicitly stated in current message):
@@ -92,14 +142,15 @@ async function extractNode(state) {
   messages.push({ role: "user", content: state.userMessage });
 
   try {
-    // Build dynamic prompt based on what's already locked in memory
+    // Build dynamic prompt based on what's already in memory
+    // Only lock fields that actually exist
     const dynamicPrompt = getExtractorPrompt(
-      state.productModel ? `${state.productModel}` : null,
-      state.partNumber ? `${state.partNumber}` : null,
-      state.goalType ? `${state.goalType}` : null
+      state.productModel,
+      state.partNumber,
+      state.goalType
     );
 
-    const response = await llm.invoke([
+    const response = await extractorLLM.invoke([
       new HumanMessage({ 
         content: dynamicPrompt + "\n\nMessage: " + state.userMessage 
       })
@@ -220,11 +271,19 @@ function checkGoalRouter(state) {
 async function askGoalNode(state) {
   console.log(`\n[ASK_GOAL] No goal detected, asking user...`);
 
+  // Build speaker prompt
+  const speakerPrompt = makeSpeakerPrompt({ type: "ask_goal" }, state);
+  
+  // Let Speaker LLM decide what to say
+  const speakerResponse = await speakerLLM.invoke([
+    new HumanMessage({ content: speakerPrompt })
+  ]);
+
   const messages = [
     ...(state.messages || []),
     {
       role: "assistant",
-      content: "What would you like help with?\n\n1. **Install a part** - I can provide installation instructions\n2. **Check part compatibility** - I can verify if a part fits your appliance\n3. **Diagnose and fix problems** - I can help troubleshoot issues\n\nPlease let me know which one you need!"
+      content: speakerResponse.content
     }
   ];
 
@@ -289,37 +348,26 @@ async function askInfoNode(state) {
   const missing = state.missingInfo || [];
   console.log(`\n[ASK_INFO] Missing: ${missing.join(", ")}`);
 
-  let message = "";
+  // Build speaker prompt with structured intent
+  const speakerPrompt = makeSpeakerPrompt({ 
+    type: "ask_missing",
+    goalType: state.goalType,
+    productModel: state.productModel,
+    partNumber: state.partNumber,
+    symptoms: state.symptoms,
+    missing: missing
+  }, state);
   
-  // Single missing item - ask more directly
-  if (missing.length === 1) {
-    const item = missing[0];
-    if (item === "appliance model") {
-      message = "📱 **I need your appliance model number to continue.**\n\nYou can find it on a sticker or label on your appliance (e.g., WDT780SAEM1)";
-    } else if (item === "part number") {
-      message = "🔧 **I need the part number to continue.**\n\nFor example: PS3406971";
-    } else if (item === "symptoms") {
-      message = "⚠️ **Can you describe what problems you're experiencing?**\n\nFor example: leaking, noisy, won't start, not cleaning";
-    }
-  } else {
-    // Multiple missing items - ask for all
-    message = `To help you with **${state.goalType.replace(/_/g, " ")}**, I need:\n\n`;
-    if (missing.includes("appliance model")) {
-      message += "📱 **Appliance Model Number** - (e.g., WDT780SAEM1)\n";
-    }
-    if (missing.includes("part number")) {
-      message += "🔧 **Part Number** - (e.g., PS3406971)\n";
-    }
-    if (missing.includes("symptoms")) {
-      message += "⚠️ **Problem Description** - (e.g., leaking, noisy, won't start, not cleaning)\n";
-    }
-  }
+  // Let Speaker LLM decide what to say
+  const speakerResponse = await speakerLLM.invoke([
+    new HumanMessage({ content: speakerPrompt })
+  ]);
 
   const messages = [
     ...(state.messages || []),
     {
       role: "assistant",
-      content: message.trim()
+      content: speakerResponse.content
     }
   ];
 
@@ -375,13 +423,22 @@ async function executeToolNode(state) {
     const result = await tool.invoke(toolInput);
     console.log(`  ✓ Tool executed`);
 
+    // Let Speaker LLM render the tool result
+    const speakerPrompt = makeSpeakerPrompt({ type: "tool_result" }, state);
+    const speakerResponse = await speakerLLM.invoke([
+      new HumanMessage({ 
+        content: speakerPrompt + "\n\n[Tool Result]\n" + String(result)
+      })
+    ]);
+
     const messages = [...(state.messages || [])];
     messages.push({ role: "tool", content: String(result) });
+    messages.push({ role: "assistant", content: speakerResponse.content });
 
     return {
       messages,
       userMessage: "",
-      finalResponse: `[TOOL USED: ${toolName}]\n\n${result}`,
+      finalResponse: speakerResponse.content,
       // Always explicitly return all state fields
       productModel: state.productModel,
       partNumber: state.partNumber,

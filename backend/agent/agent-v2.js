@@ -34,8 +34,13 @@ export async function runAgent(sessionState, userMessage) {
     const output = await agentGraph.invoke(input);
 
     // Extract response
-    const response = output.finalResponse || 
-      "I'm here to help. Tell me what appliance you need help with, or what you'd like to do.";
+    const lastAssistantMessage = [...(output.messages || [])]
+    .reverse()
+    .find(m => m.role === "assistant");
+
+    const response = lastAssistantMessage?.content 
+    || output.finalResponse
+    || "I'm here to help. Tell me what appliance you need help with.";
 
     console.log(`\n[AGENT] Full output from graph:`, JSON.stringify(output, null, 2));
 
