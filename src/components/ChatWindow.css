@@ -109,3 +109,127 @@
   cursor: pointer;
   font-size: 13px;
 }
+
+.video-bubble {
+  margin: 12px 0;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-radius: 10px;
+  border-top-left-radius: 0;
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.tool-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
+  padding: 8px 10px;
+  background-color: #e8f5e9;
+  border-left: 3px solid #4caf50;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2e7d32;
+  align-self: flex-start;
+}
+
+.checkmark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background-color: #4caf50;
+  color: white;
+  border-radius: 50%;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.tool-text {
+  white-space: nowrap;
+}
+
+
+.video-bubble iframe {
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.video-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  margin: 0;
+  padding: 0 2px;
+}
+
+.parts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 12px 0;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-radius: 10px;
+  border-top-left-radius: 0;
+  align-self: flex-start;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.part-card {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.part-image {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.part-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.part-number {
+  font-size: 11px;
+  color: #666;
+  margin: 0 0 4px 0;
+}
+
+.part-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1b3875;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .parts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .parts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

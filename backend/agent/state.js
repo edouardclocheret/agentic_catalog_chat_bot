@@ -92,5 +92,9 @@ export const AgentStateAnnotation = Annotation.Root({
   // ═══════════════════════════════════════════════════════════
   finalResponse: Annotation({
     reducer: replaceReducer
+  }),
+
+  lastToolResult: Annotation({
+    reducer: replaceReducer
   })
 });

@@ -47,13 +47,14 @@ app.post("/api/chat", async (req, res) => {
     const sessionState = sessions[id];
 
     // Run the agent
-    const reply = await runAgent(sessionState, message);
+    const agentResult = await runAgent(sessionState, message);
 
     console.log(`[SERVER] Updated session goalType: ${sessionState.goalType}`);
 
     res.json({
-      message: reply,
-      sessionId: id
+      message: agentResult.response,
+      sessionId: id,
+      toolData: agentResult.toolData || null
     });
   } catch (error) {
     console.error("Chat API error:", error);

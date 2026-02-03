@@ -45,15 +45,21 @@ Be concise and friendly.`;
     let prompt = `You are a PartSelect support agent. 
 Goal: ${goalType.replace(/_/g, " ")}
 
-The user has already provided some info:`;
+The user has already provided:`;
 
     if (productModel) prompt += `\n- Appliance model: ${productModel}`;
-    if (partNumber) prompt += `\n- Part number: ${partNumber}`;
     if (symptoms?.length > 0) prompt += `\n- Problems: ${symptoms.join(", ")}`;
+    if (partNumber) prompt += `\n- Part number: ${partNumber}`;
 
-    prompt += `\n\nYou ONLY need to ask for the MISSING items:\n${missing.map(m => `- ${m}`).join("\n")}
-
-Ask for ONLY these items. Be specific with examples. Be concise.`;
+    prompt += `\n\nYou ONLY need to ask for these MISSING items:`;
+    prompt += `\n${missing.map(m => `- ${m}`).join("\n")}`;
+    
+    // Add specific instructions based on goal
+    if (goalType === "diagnose_repair") {
+      prompt += `\n\nFor diagnosing issues, ONLY ask for the missing appliance model. Be brief and direct. One sentence max.`;
+    } else if (goalType === "install_instruction" || goalType === "check_compatibility") {
+      prompt += `\n\nFor installation or compatibility, ONLY ask for the missing model/part number. Be brief. One sentence max.`;
+    }
 
     return prompt;
   }
@@ -424,12 +430,36 @@ async function executeToolNode(state) {
     const tool = toolMap[toolName];
     const result = await tool.invoke(toolInput);
     console.log(`  ✓ Tool executed`);
+    console.log(`  Tool result:`, result);
+
+    // Parse result if it's JSON string
+    let parsedResult = result;
+    if (typeof result === "string") {
+      try {
+        parsedResult = JSON.parse(result);
+        console.log(`  ✓ Parsed result as JSON:`, parsedResult);
+      } catch {
+        console.log(`  ✗ Could not parse as JSON, keeping as string`);
+        parsedResult = result;
+      }
+    }
 
     // Let Speaker LLM render the tool result
     const speakerPrompt = makeSpeakerPrompt({ type: "tool_result" }, state);
+    
+    // For diagnosis results, format as text without image URLs for the LLM
+    let speakerInput = String(result);
+    if (toolName === "diagnose_repair" && typeof parsedResult === "object" && parsedResult.suggestedParts) {
+      // Build text description without URLs for the LLM
+      const partsText = parsedResult.suggestedParts
+        .map(p => `- ${p.name} (Part #${p.partNumber}) - $${p.price}`)
+        .join("\n");
+      speakerInput = `Found ${parsedResult.suggestedParts.length} parts that might fix: ${parsedResult.symptoms?.join(", ")}\n\n${partsText}`;
+    }
+    
     const speakerResponse = await speakerLLM.invoke([
       new HumanMessage({ 
-        content: speakerPrompt + "\n\n[Tool Result]\n" + String(result)
+        content: speakerPrompt + "\n\n[Tool Result]\n" + speakerInput
       })
     ]);
 
@@ -441,6 +471,11 @@ async function executeToolNode(state) {
       messages,
       userMessage: "",
       finalResponse: speakerResponse.content,
+      // Store tool result for frontend rendering
+      lastToolResult: {
+        toolName,
+        data: parsedResult
+      },
       // Always explicitly return all state fields
       productModel: state.productModel,
       partNumber: state.partNumber,

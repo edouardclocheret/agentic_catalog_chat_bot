@@ -57,14 +57,19 @@ export async function runAgent(sessionState, userMessage) {
     sessionState.partNumber = output.partNumber !== undefined ? output.partNumber : sessionState.partNumber;
     sessionState.symptoms = output.symptoms !== undefined ? output.symptoms : (sessionState.symptoms || []);
     sessionState.goalType = output.goalType !== undefined ? output.goalType : sessionState.goalType;
+    sessionState.lastToolResult = output.lastToolResult || null;
 
     console.log(`\n[AGENT] Session state after update:`);
     console.log(`  productModel: ${sessionState.productModel}`);
     console.log(`  partNumber: ${sessionState.partNumber}`);
     console.log(`  goalType: ${sessionState.goalType}`);
     console.log(`  symptoms: ${JSON.stringify(sessionState.symptoms)}`);
+    console.log(`  lastToolResult:`, sessionState.lastToolResult);
 
-    return response;
+    return {
+      response,
+      toolData: output.lastToolResult || null
+    };
   } catch (error) {
     console.error(`[ERROR] Agent failed:`, error.message);
     return `Error: ${error.message}`;

@@ -12,6 +12,7 @@ export const getAIMessage = async (userQuery, sessionId) => {
   return {
     role: "assistant",
     content: data.message,
-    sessionId: data.sessionId
+    sessionId: data.sessionId,
+    toolData: data.toolData
   };
 };

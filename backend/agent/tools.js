@@ -68,6 +68,7 @@ function diagnoseFromSymptoms(model, symptoms, partsData) {
         name: partData.name,
         price: partData.price,
         description: partData.description,
+        image_url: partData.image_url,
         solves_symptoms: partData.solves_symptoms || []
       });
     }
@@ -75,7 +76,10 @@ function diagnoseFromSymptoms(model, symptoms, partsData) {
 
   console.log(`[DIAGNOSIS] Found ${suggestedParts.length} matching parts`);
 
-  if (suggestedParts.length === 0) {
+  // Keep only top 3 matches
+  const topParts = suggestedParts.slice(0, 3);
+
+  if (topParts.length === 0) {
     return `No parts found for symptoms: ${symptoms.join(", ")}. Please describe the issue in more detail.`;
   }
 
@@ -83,8 +87,8 @@ function diagnoseFromSymptoms(model, symptoms, partsData) {
     {
       model,
       symptoms,
-      suggestedParts,
-      message: `Found ${suggestedParts.length} part(s) that might fix these issues`
+      suggestedParts: topParts,
+      message: `Found ${topParts.length} part(s) that might fix these issues`
     },
     null,
     2

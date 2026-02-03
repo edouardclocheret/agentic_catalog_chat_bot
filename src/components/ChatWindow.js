@@ -38,6 +38,8 @@ function ChatWindow() {
         setSessionId(newMessage.sessionId);
       }
       
+      console.log("New message received:", newMessage);
+      
       setMessages(prevMessages => [...prevMessages, newMessage]);
     }
   };
@@ -49,6 +51,45 @@ function ChatWindow() {
                   {message.content && (
                       <div className={`message ${message.role}-message`}>
                           <div dangerouslySetInnerHTML={{__html: marked(message.content).replace(/<p>|<\/p>/g, "")}}></div>
+                      </div>
+                  )}
+                  {message.role === "assistant" && message.toolData && (
+                      <div className="tool-badge">
+                          <span className="checkmark">✓</span>
+                          <span className="tool-text">
+                              APPROVED by PartSelect{" "}
+                              {message.toolData.toolName === "diagnose_repair" && "Diagnosis Tool"}
+                              {message.toolData.toolName === "check_compatibility" && "Compatibility Tool"}
+                              {message.toolData.toolName === "get_installation_instructions" && "Installation Tool"}
+                          </span>
+                      </div>
+                  )}
+                  {message.role === "assistant" && message.toolData && message.toolData.toolName === "get_installation_instructions" && message.toolData.data?.videoUrl && (
+                      <div className="video-bubble">
+                          <iframe
+                              width="100%"
+                              height="315"
+                              src={message.toolData.data.videoUrl}
+                              title={message.toolData.data.name || "Installation Video"}
+                              frameBorder="0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                          ></iframe>
+                          <p className="video-title">{message.toolData.data.name}</p>
+                      </div>
+                  )}
+                  {message.role === "assistant" && message.toolData && message.toolData.toolName === "diagnose_repair" && message.toolData.data?.suggestedParts && (
+                      <div className="parts-grid">
+                          {message.toolData.data.suggestedParts.map((part, partIndex) => (
+                              <div key={partIndex} className="part-card">
+                                  {part.image_url && (
+                                      <img src={part.image_url} alt={part.name} className="part-image" />
+                                  )}
+                                  <h3 className="part-name">{part.name}</h3>
+                                  <p className="part-number">Part #: {part.partNumber}</p>
+                                  <p className="part-price">${part.price?.toFixed(2)}</p>
+                              </div>
+                          ))}
                       </div>
                   )}
               </div>
