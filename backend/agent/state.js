@@ -1,14 +1,5 @@
 import { Annotation } from "@langchain/langgraph";
 
-/**
- * State schema for the 3-role PartSelect agent
- * 
- * Architecture:
- * - Extractor: Fills in lastExtraction, updates model/part/symptoms/goalType
- * - Controller: Uses context to decide nextAction, can set toolName/toolInput
- * - Tool: Uses toolName/toolInput, fills in toolResults
- * - Answer: Uses toolResults to fill finalResponse
- */
 
 const replaceReducer = (current, latest) => latest !== undefined ? latest : current;
 
@@ -18,16 +9,12 @@ const mergeArrayReducer = (current = [], update) => {
 };
 
 export const AgentStateAnnotation = Annotation.Root({
-  // ═══════════════════════════════════════════════════════════
-  // INPUT
-  // ═══════════════════════════════════════════════════════════
+ //input
   userMessage: Annotation({
     reducer: replaceReducer
   }),
 
-  // ═══════════════════════════════════════════════════════════
-  // CONVERSATION HISTORY
-  // ═══════════════════════════════════════════════════════════
+  //history
   messages: Annotation({
     reducer: (current = [], update) => {
       if (Array.isArray(update)) return update;
@@ -35,9 +22,7 @@ export const AgentStateAnnotation = Annotation.Root({
     }
   }),
 
-  // ═══════════════════════════════════════════════════════════
-  // MEMORY - Extracted Information
-  // ═══════════════════════════════════════════════════════════
+  //memeory 
   productModel: Annotation({
     reducer: replaceReducer
   }),
@@ -58,16 +43,12 @@ export const AgentStateAnnotation = Annotation.Root({
     reducer: replaceReducer
   }),
 
-  // ═══════════════════════════════════════════════════════════
-  // EXTRACTION RESULTS - What the Extractor found
-  // ═══════════════════════════════════════════════════════════
+  // extracted info
   lastExtraction: Annotation({
     reducer: replaceReducer
   }),
 
-  // ═══════════════════════════════════════════════════════════
-  // CONTROLLER STATE - Decision making
-  // ═══════════════════════════════════════════════════════════
+  //controller
   controllerDecision: Annotation({
     reducer: replaceReducer
   }),
@@ -76,9 +57,8 @@ export const AgentStateAnnotation = Annotation.Root({
     reducer: replaceReducer
   }),
 
-  // ═══════════════════════════════════════════════════════════
-  // TOOL EXECUTION
-  // ═══════════════════════════════════════════════════════════
+  //tool execution
+
   toolName: Annotation({
     reducer: replaceReducer
   }),
@@ -91,9 +71,7 @@ export const AgentStateAnnotation = Annotation.Root({
     reducer: replaceReducer
   }),
 
-  // ═══════════════════════════════════════════════════════════
-  // FINAL OUTPUT
-  // ═══════════════════════════════════════════════════════════
+  //output
   finalResponse: Annotation({
     reducer: replaceReducer
   }),

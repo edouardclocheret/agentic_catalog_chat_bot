@@ -2,14 +2,6 @@ import { agentGraph } from "./graph.js";
 
 /**
  * RUN AGENT
- * Orchestrates the agent graph through extract → routing → tools → response cycle
- * 
- * Flow:
- * 1. Extract information from user message
- * 2. Check if goal is specified
- * 3. Validate all required fields for goal
- * 4. Execute appropriate tool
- * 
  * @param {Object} sessionState - Persisted session memory
  * @param {string} userMessage - User's current input
  * @returns {Promise<{response: string, toolData: Object}>} - Agent response and tool results
