@@ -190,14 +190,23 @@ Turn 4: USER provides email
 
 ## Memory Persistence Strategy
 
-### Write-Once Fields (Locked)
+### Freely Updatable Fields
 
 ```
 Turn 1: "My WDT780SAEM1..."
-  productModel = "WDT780SAEM1"  ← LOCKED
+  productModel = "WDT780SAEM1"
+  partNumber = null
+  goalType = "diagnose_repair"
 
-Turn 2: "Actually it's LFX31945..."
-  productModel = "WDT780SAEM1"  ← STAYS (won't overwrite)
+Turn 2: "Actually let me check PS3406971 compatibility"
+  productModel = "WDT780SAEM1"  ← Preserved (user didn't change it)
+  partNumber = "PS3406971"       ← Updated
+  goalType = "check_compatibility" ← Updated
+
+Turn 3: "What about model LFX31945?"
+  productModel = "LFX31945"  ← Updated to new model
+  partNumber = "PS3406971"   ← Preserved (user didn't change it)
+  goalType = null (reset after tool)  → Then set to new goal in same message
 ```
 
 ### Accumulated Fields
@@ -227,8 +236,7 @@ Next user message:
 ```
 Input: userMessage
 Process:
-  1. Build dynamic prompt locking known fields
-  2. Call Extractor LLM:
+  1. Call Extractor LLM:
      {
        "model": "WDT780SAEM1" or null,
        "part": "PS3406971" or null,
@@ -236,10 +244,10 @@ Process:
        "goal": "diagnose_repair" or null,
        "email": "user@example.com" or null
      }
-  3. Update state:
-     • If extracted non-null, update memory
-     • If null, preserve existing value
-  4. Accumulate symptoms (never clear)
+  2. Update state with extracted values:
+     • If extracted non-null, use new value
+     • If extracted null, preserve existing value
+  3. Accumulate symptoms (never clear)
 Output: Updated state + lastExtraction
 ```
 
@@ -515,34 +523,34 @@ SESSION CREATED
 │
 TURN 1: User specifies model + goal
 │
-├─ productModel: "WDT780SAEM1"  ← LOCKED
-├─ symptoms: ["Won't Start"]     ← ACCUMULATED
-├─ goalType: "diagnose_repair"
+├─ productModel: "WDT780SAEM1"  ← Set
+├─ symptoms: ["Won't Start"]     ← Accumulated
+├─ goalType: "diagnose_repair"   ← Set
 │  │
 │  ├─ Tool executed
 │  ├─ Response rendered
-│  └─ goalType: null             ← CLEARED
+│  └─ goalType: null             ← Cleared
 │
-TURN 2: User asks for email
+TURN 2: User specifies new model and goal
 │
-├─ productModel: "WDT780SAEM1"  ← STILL LOCKED
-├─ symptoms: ["Won't Start"]     ← STILL THERE
-├─ goalType: "email_summary"     ← NEW
+├─ productModel: "LFX31945"      ← Updated (user said new model)
+├─ symptoms: ["Won't Start"]     ← Still there
+├─ goalType: "email_summary"     ← Updated to new goal
 ├─ emailAddress: "user@email.com"
 │  │
 │  ├─ Tool executed
 │  ├─ Email sent
-│  └─ goalType: null             ← CLEARED AGAIN
+│  └─ goalType: null             ← Cleared
 │
-TURN 3: User asks for installation
+TURN 3: User continues with same model, new part and goal
 │
-├─ productModel: "WDT780SAEM1"  ← STILL LOCKED
-├─ goalType: "install_instruction"
-├─ partNumber: "PS3406971"
+├─ productModel: "LFX31945"      ← Preserved (user didn't mention)
+├─ partNumber: "PS3406971"       ← New part specified
+├─ goalType: "check_compatibility" ← New goal
 │  │
 │  ├─ Tool executed
-│  ├─ Video shown
-│  └─ goalType: null
+│  ├─ Result shown
+│  └─ goalType: null             ← Cleared
 ```
 
 ## Key Insights
@@ -551,17 +559,20 @@ TURN 3: User asks for installation
    - Extractor (temp 0.1): Silent, deterministic JSON extraction
    - Speaker (temp 0.7): Natural, engaging user responses
 
-2. **Memory Locks:**
-   - Prevent accidental overwriting of model/part
-   - Force explicit user confirmation to change
+2. **Flexible Memory Updates:**
+   - Model, part, goal can be freely changed each turn
+   - If user doesn't mention a field, existing value is preserved
+   - Allows conversation flow without locking users into initial choices
 
 3. **Goal Clearing:**
-   - Enable sequential tool usage in same session
+   - Explicitly set to `null` after tool execution
+   - Enables sequential tool usage in same session
    - Users can go: diagnose → install → email without re-authenticating
 
 4. **Symptom Accumulation:**
    - Builds understanding over time
    - Can ask "also having X?" and it adds to list
+   - Never clears unless conversation is reset
 
 5. **Conditional Routing:**
    - Simple state checks (presence of fields)

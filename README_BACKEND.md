@@ -50,8 +50,8 @@ backend/
 ```javascript
 {
   messages: [],              // Full conversation history
-  productModel: null,        // Locked once set (e.g., "WDT780SAEM1")
-  partNumber: null,          // Locked once set (e.g., "PS3406971")
+  productModel: null,        // Can be updated each turn (e.g., "WDT780SAEM1")
+  partNumber: null,          // Can be updated each turn (e.g., "PS3406971")
   symptoms: [],              // Accumulates over conversation
   goalType: null,            // Current user intent (diagnose, install, etc.)
   emailAddress: null,        // User email for sending summaries
@@ -68,22 +68,21 @@ EXTRACT → CHECK_GOAL → (ASK_GOAL OR CHECK_REQUIREMENTS) → (ASK_INFO OR EXE
 ```
 
 #### Node 1: EXTRACT
-**Purpose:** Parse user message and update permanent memory
+**Purpose:** Parse user message and update state
 
 **Process:**
-1. Build dynamic prompt that locks already-known fields
-2. Call Extractor LLM to extract: `{ model, part, symptoms, goal, email }`
-3. Update state with "write-once" strategy:
-   - Model/Part/Goal: Only update if newly extracted (never overwrite with null)
+1. Call Extractor LLM to extract: `{ model, part, symptoms, goal, email }`
+2. Update state with extraction results:
+   - Model/Part/Goal: Update with newly extracted values (or keep existing if null)
    - Symptoms: Accumulate (never clear)
    - Email: Update if provided
 
 **Key Logic:**
 ```javascript
-// Lock fields that already exist in memory
-const modelInstruction = productModel 
-  ? `ALWAYS return null (already known: ${productModel})`
-  : `extract appliance model or null`;
+// Fields are freely updatable each turn
+productModel: extracted.model?.toUpperCase() || state.productModel || null,
+partNumber: extracted.part?.toUpperCase() || state.partNumber || null,
+goalType: extracted.goal || state.goalType || null
 ```
 
 #### Router 1: CHECK_GOAL
@@ -272,14 +271,15 @@ sessionState.productModel = output.productModel !== undefined
 
 ## Memory Strategy
 
-**Write-Once Pattern:**
-- Model, Part, Goal: Locked once extracted (prevents accidental overwriting)
-- Symptoms: Accumulated (can add more throughout conversation)
+**Flexible Field Updates:**
+- Model, Part, Goal: Freely updated each turn if user provides new values
+- Symptoms: Accumulated (always add to existing list, never clear)
 - Email: Updated if provided by user
+- If user doesn't specify a value, the existing value is preserved
 
 **Goal Reset:**
 - Explicitly set to `null` after tool execution
-- Allows user to specify new tool in next message without repeating model/part
+- Allows user to specify new tool in next message
 
 **Example Flow:**
 ```

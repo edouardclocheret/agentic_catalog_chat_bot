@@ -75,20 +75,14 @@ The user has already provided:`;
 
 /**
  * BUILD EXTRACTOR PROMPT
- * Dynamic prompt that locks fields that are already in memory
+ * Dynamic prompt for extracting fields from user message
  */
-function getExtractorPrompt(productModel, partNumber, goalType) {
-  const modelInstruction = productModel
-    ? `- model: ALWAYS return null (already known: ${productModel})`
-    : `- model: appliance model (e.g., WDT780SAEM1) or null`;
+function getExtractorPrompt() {
+  const modelInstruction = `- model: appliance model (e.g., WDT780SAEM1) or null`;
   
-  const partInstruction = partNumber
-    ? `- part: ALWAYS return null (already known: ${partNumber})`
-    : `- part: part number (e.g., PS3406971) or null`;
+  const partInstruction = `- part: part number (e.g., PS3406971) or null`;
   
-  const goalInstruction = goalType
-    ? `- goal: ALWAYS return null (already locked as ${goalType})`
-    : `- goal: detected goal from THIS message ONLY, or null (do NOT use memory goal)
+  const goalInstruction = `- goal: detected goal from THIS message ONLY, or null
 
 Goals (only if explicitly stated in current message):
 - "diagnose_repair" if user says: fix, troubleshoot, diagnose, what's wrong, repair
@@ -134,11 +128,7 @@ async function extractNode(state) {
   messages.push({ role: "user", content: state.userMessage });
 
   try {
-    const dynamicPrompt = getExtractorPrompt(
-      state.productModel,
-      state.partNumber,
-      state.goalType
-    );
+    const dynamicPrompt = getExtractorPrompt();
 
     const response = await extractorLLM.invoke([
       new HumanMessage({ 
@@ -153,44 +143,26 @@ async function extractNode(state) {
       console.error("[EXTRACT] Failed to parse LLM response");
     }
 
-    // Build updates with memory preservation strategy
+    // Build updates - all fields can be updated
     const updates = {
       messages,
       userMessage: "",
       lastExtraction: extracted,
-      productModel: state.productModel || null,
-      partNumber: state.partNumber || null,
-      symptoms: state.symptoms || [],
-      goalType: state.goalType || null
+      productModel: extracted.model?.toUpperCase() || state.productModel || null,
+      partNumber: extracted.part?.toUpperCase() || state.partNumber || null,
+      goalType: extracted.goal || state.goalType || null
     };
-
-    // Update model only if newly extracted
-    if (extracted.model !== null && extracted.model !== undefined) {
-      updates.productModel = extracted.model.toUpperCase();
-    }
-
-    // Update part only if newly extracted
-    if (extracted.part !== null && extracted.part !== undefined) {
-      updates.partNumber = extracted.part.toUpperCase();
-    }
 
     // Accumulate symptoms
     if (extracted.symptoms?.length > 0) {
       const allSymptoms = Array.from(new Set([...(state.symptoms || []), ...extracted.symptoms]));
       updates.symptoms = allSymptoms;
-    }
-
-    // Update goal only if newly extracted
-    if (extracted.goal !== null && extracted.goal !== undefined) {
-      updates.goalType = extracted.goal;
+    } else {
+      updates.symptoms = state.symptoms || [];
     }
 
     // Update email if provided
-    if (extracted.email !== null && extracted.email !== undefined) {
-      updates.emailAddress = extracted.email;
-    } else {
-      updates.emailAddress = state.emailAddress || null;
-    }
+    updates.emailAddress = extracted.email || state.emailAddress || null;
 
     return updates;
   } catch (error) {
